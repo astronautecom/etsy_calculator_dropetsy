@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calculateur de Frais Etsy - DropEtsy</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .calculator {
+      width: 45%;
+      border: 1px solid #ccc;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      margin: 10px;
+    }
+
+    .chart-container {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 20px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    label,
+    input,
+    select,
+    button {
+      display: block;
+      margin-bottom: 10px;
+      width: 100%;
+    }
+
+    button {
+      padding: 10px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    #results .detail {
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
+    #results p {
+      margin: 5px 0;
+    }
+
+    #results p strong {
+      color: #333;
+    }
+
+    .result-section {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #eef;
+      border-left: 5px solid #00b;
+    }
+
+    .result-section p {
+      margin: 5px 0;
+      padding: 5px;
+    }
+
+    .fees-etsy {
+      background-color: #ffda77;
+    }
+
+    .fees-autoentrepreneur {
+      background-color: #b871f6;
+    }
+
+    .profit {
+      background-color: #48c9a9;
+    }
+
+    .total-cost {
+      background-color: #f57576;
+      border-top: 1px solid #c8d6e5;
+    }
+
+    /* ligne de séparation */
+    .separator {
+      border-top: 2px solid #ddd;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="calculator">
+      <h2>Calculateur de Frais sur Etsy - DropEtsy Premium</h2>
+      <label for="currency">Monnaie :</label>
+      <select id="currency">
+        <option value="EUR">Euro (€)</option>
+        <option value="USD">Dollar ($)</option>
+      </select>
+      <label for="sellingPrice">Prix de vente :</label>
+      <input type="number" id="sellingPrice" value="20.00" step="0.01">
+      <label for="cost">Coût du produit :</label>
+      <input type="number" id="cost" value="10.00" step="0.01">
+      <label for="listingFeeChk">Inclure les frais de mise en ligne (0.20 €) :</label>
+      <input type="checkbox" id="listingFeeChk" checked>
+      <label for="autoEntrepreneurChk">Inclure les frais d'autoentrepreneur (12,3%) :</label>
+      <input type="checkbox" id="autoEntrepreneurChk">
+      <button onclick="calculate()">Calculer</button>
+      <div id="results"></div>
+    </div>
+    <div class="chart-container">
+      <canvas id="revenueChart"></canvas>
+    </div>
+  </div>
+  <script>
+    var myChart; // variable pour le  graphique
+
+    function calculate() {
+      var currency = document.getElementById('currency').value;
+      var sellingPrice = parseFloat(document.getElementById('sellingPrice').value);
+      var cost = parseFloat(document.getElementById('cost').value);
+      var autoEntrepreneurChk = document.getElementById('autoEntrepreneurChk').checked;
+      var listingFeeChk = document.getElementById('listingFeeChk').checked;
+      var listingFee = listingFeeChk ? 0.20 : 0; // frais mise en ligne produit etsy
+      var transactionFee = sellingPrice * 0.065;
+      var processingFee = sellingPrice * 0.03 + 0.25; 
+      var totalEtsyFees = listingFee + transactionFee + processingFee; // total frais Etsy pour le donut
+      var autoEntrepreneurFee = autoEntrepreneurChk ? sellingPrice * 0.123 : 0; // frais AE
+      var profit = sellingPrice - cost - totalEtsyFees - autoEntrepreneurFee;
+
+      var resultsHTML = '<div class="result-section">' +
+        '<p><strong>Revenu :</strong> ' + sellingPrice.toFixed(2) + ' ' + currency + '</p>' +
+        '<p class="fees"><strong>Coût :</strong> ' + cost.toFixed(2) + ' ' + currency + '</p>';
+
+      if (listingFeeChk) {
+        resultsHTML += '<p class="fees fees-etsy"><strong>Frais de mise en ligne :</strong> ' + listingFee.toFixed(2) + ' ' + currency + '</p>';
+      }
+
+      resultsHTML += '<p class="fees fees-etsy"><strong>Frais de transaction :</strong> ' + transactionFee.toFixed(2) + ' ' + currency + '</p>' +
+        '<p class="fees fees-etsy"><strong>Frais de traitement :</strong> ' + processingFee.toFixed(2) + ' ' + currency + '</p>';
+
+      if (autoEntrepreneurChk) {
+        resultsHTML += '<div class="separator"></div>';
+        resultsHTML += '<p class="fees fees-autoentrepreneur"><strong>Frais d\'autoentrepreneur :</strong> ' + autoEntrepreneurFee.toFixed(2) + ' ' + currency + '</p>';
+      }
+
+      resultsHTML += '<div class="separator"></div>';
+      resultsHTML += '<p class="total-cost"><strong>Frais total Etsy :</strong> ' + totalEtsyFees.toFixed(2) + ' ' + currency + '</p>';
+
+
+      var percentage = (profit * 100 / sellingPrice)
+
+      resultsHTML += '<p class="profit"><strong>Profit :</strong> ' + profit.toFixed(2) + ' ' + currency + ' (' + percentage + ' %)' + '</p>' +
+        '</div>';
+
+      document.getElementById('results').innerHTML = resultsHTML;
+
+      var data = [profit, cost];
+      var labels = ['Profit', 'Coût du produit'];
+      var backgroundColors = [
+        'rgba(54, 162, 235, 0.2)',
+        'rgba(75, 192, 192, 0.2)'
+      ];
+      var borderColors = [
+        'rgba(54, 162, 235, 1)',
+        'rgba(75, 192, 192, 1)'
+      ];
+
+      if (autoEntrepreneurChk) {
+        data.push(autoEntrepreneurFee);
+        labels.push('Frais d\'autoentrepreneur');
+        backgroundColors.push('rgba(153, 102, 255, 0.2)');
+        borderColors.push('rgba(153, 102, 255, 1)');
+      }
+
+      data.splice(1, 0, totalEtsyFees);
+      labels.splice(1, 0, 'Frais Etsy');
+      backgroundColors.splice(1, 0, 'rgba(255, 159, 64, 0.2)');
+      borderColors.splice(1, 0, 'rgba(255, 159, 64, 1)');
+
+      updateChart(data, labels, backgroundColors, borderColors, currency);
+    }
+
+    function updateChart(data, labels, backgroundColors, borderColors, currency) {
+      var ctx = document.getElementById('revenueChart').getContext('2d');
+
+      if (myChart) {
+        myChart.destroy();
+      }
+
+      myChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Répartition des revenus',
+            data: data,
+            backgroundColor: backgroundColors,
+            borderColor: borderColors,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          tooltips: {
+            callbacks: {
+              label: function (tooltipItem, data) {
+                var label = data.labels[tooltipItem.index] || '';
+                if (label) {
+                  label += ': ';
+                }
+                label += data.datasets[0].data[tooltipItem.index].toFixed(2) + ' ' + currency;
+                return label;
+              }
+            }
+          }
+        }
+      });
+    }
+  </script>
+</body>
+
+</html>
